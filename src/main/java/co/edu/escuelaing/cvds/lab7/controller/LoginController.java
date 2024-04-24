@@ -8,92 +8,82 @@ import co.edu.escuelaing.cvds.lab7.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
-@Controller
-@RequestMapping(value = "/login")
+@RestController
+@RequestMapping(value = "/api/login")
 public class LoginController {
 
-    private static final String LOGIN_PAGE = "login/login";
-
     private final UserRepository userRepository;
-
     private final SessionRepository sessionRepository;
 
     @Autowired
-    public LoginController(
-            UserRepository userRepository,
-            SessionRepository sessionRepository
-    ) {
+    public LoginController(UserRepository userRepository, SessionRepository sessionRepository) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
     }
 
-    @GetMapping("")
-    public String login() {
-        return LOGIN_PAGE;
-    }
 
     @PostMapping("")
-    public String loginSubmit(@RequestParam Map<String, String> parameters, Model model, HttpServletResponse response) {
-        User user = userRepository.findByEmail(parameters.get("email"));
-        if (user == null) {
-            model.addAttribute("errors", Arrays.asList("Usuario no encontrado"));
-            return LOGIN_PAGE;
-        } else if (!user.getPassword().equals(parameters.get("password"))) {
-            model.addAttribute("errors", Arrays.asList("Contraseña incorrecta"));
-            return LOGIN_PAGE;
-        } else {
-            Session session = new Session(UUID.randomUUID(), Instant.now(), user);
-            sessionRepository.save(session);
-            // create and add a cookie to the response
-            Cookie cookie = new Cookie("authToken", session.getToken().toString());
-            cookie.setHttpOnly(true);
-            response.addCookie(cookie);
-            return "redirect:/login/protected/example";
+    @ResponseBody
+    public ResponseEntity<?> loginSubmit(@RequestBody Map<String, String> credentials, HttpServletResponse response) {
+        String email = credentials.get("email");
+        String password = credentials.get("password");
+
+        User user = userRepository.findByEmail(email);
+        if (user == null || !user.getPassword().equals(password)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid email or password");
         }
+
+        Session session = new Session(UUID.randomUUID(), Instant.now(), user);
+        sessionRepository.save(session);
+
+        String responseBody = session.getToken().toString();
+
+        Cookie cookie = new Cookie("authToken", session.getToken().toString());
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
+
+        return ResponseEntity.ok().body(responseBody);
     }
 
     @PostMapping("logout")
-    public String logoutSubmit(HttpServletResponse response) {
+    public ResponseEntity<?> logoutSubmit(HttpServletResponse response) {
         Cookie cookie = new Cookie("authToken", null);
         cookie.setMaxAge(0);
         cookie.setSecure(true);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         response.addCookie(cookie);
-        return LOGIN_PAGE;
-    }
-
-    @GetMapping("register")
-    public String register() {
-        return "login/register";
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("register")
-    public String registerSubmit(@RequestParam Map<String, String> parameters) {
-        User user = new User(
-                parameters.get("email"),
-                parameters.get("password"),
-                Arrays.asList(UserRole.CLIENTE)
-        );
+    @ResponseBody
+    public ResponseEntity<?> registerSubmit(@RequestBody Map<String, String> registrationInfo) {
+        String email = registrationInfo.get("email");
+        String password = registrationInfo.get("password");
+
+        if (userRepository.findByEmail(email) != null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User already exists");
+        }
+
+        User user = new User(email, password, Arrays.asList(UserRole.CLIENTE));
         userRepository.save(user);
-        return "redirect:/login";
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("protected/example")
     public String protectedExample() {
         return "login/protected";
     }
-
 }

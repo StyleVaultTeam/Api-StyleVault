@@ -47,7 +47,7 @@ public class LoginController {
         Session session = new Session(UUID.randomUUID(), Instant.now(), user);
         sessionRepository.save(session);
 
-        String responseBody = session.getToken().toString();
+        String responseBody = "{\"authToken\":\"" + session.getToken().toString() + "\"}";
 
         Cookie cookie = new Cookie("authToken", session.getToken().toString());
         cookie.setHttpOnly(true);
@@ -85,5 +85,18 @@ public class LoginController {
     @GetMapping("protected/example")
     public String protectedExample() {
         return "login/protected";
+    }
+    @GetMapping("/api/login/{token}")
+    @ResponseBody
+    public ResponseEntity<?> getUsernameFromToken(@PathVariable String token) {
+        Session session = sessionRepository.findByToken(UUID.fromString(token));
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Session not found");
+        }
+
+
+        User user = session.getUser();
+
+        return ResponseEntity.ok().body(user.getName());
     }
 }

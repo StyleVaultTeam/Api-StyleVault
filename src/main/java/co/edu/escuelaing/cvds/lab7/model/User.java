@@ -27,4 +27,7 @@ public class User {
     @Column(name = "roles", nullable=false)
     private List<UserRole> userRoles;
 
+    public String getName() {
+        return email;
+    }
 }

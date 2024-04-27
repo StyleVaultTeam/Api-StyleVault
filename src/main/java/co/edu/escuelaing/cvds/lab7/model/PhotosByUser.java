@@ -17,6 +17,6 @@ public class PhotosByUser {
     private Long photoId;
     @Column(name = "userName")
     private String userName;
-    @Column(name = "photo64",length = 20000)
+    @Column(name = "photo64",length = 200000)
     private String photo64;
 }

@@ -83,7 +83,7 @@ public class LoginController {
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }
-    @GetMapping("/{token}")
+    @GetMapping("/username/ {token}")
     @ResponseBody
     public ResponseEntity<?> getUsernameFromToken(@PathVariable UUID token) {
         Session session = sessionRepository.findByToken(token);

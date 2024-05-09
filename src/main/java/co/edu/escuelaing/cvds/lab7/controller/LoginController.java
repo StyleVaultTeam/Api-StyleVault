@@ -36,30 +36,50 @@ public class LoginController {
         String password = credentials.get("password");
 
         User user = userRepository.findByEmail(email);
-        if (user == null || !user.getPassword().equals(password)) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new token("User Not found"));
+        } else if (!user.getPassword().equals(password)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new token("Invalid email or password"));
+        } else{
+            userRepository.save(user); // Guardar el token en la base de datos
+            if(sessionRepository.findByUser(user) != null){
+                sessionRepository.delete(sessionRepository.findByUser(user));
+                UUID token = UUID.randomUUID();
+                Session session = new Session(token, Instant.now(), user);
+                sessionRepository.save(session);
+
+                // Crear la respuesta con el token en formato JSON
+                token token1 = new token(token.toString());
+
+                // Configurar y agregar la cookie al response
+                Cookie cookie = new Cookie("authToken", token.toString());
+                cookie.setHttpOnly(true);
+                response.addCookie(cookie);
+
+                return ResponseEntity.ok().body(token1);
+            }else {
+                // Guardar la sesión
+                UUID token = UUID.randomUUID();
+                Session session = new Session(token, Instant.now(), user);
+                sessionRepository.save(session);
+
+                // Crear la respuesta con el token en formato JSON
+                token token1 = new token(token.toString());
+
+                // Configurar y agregar la cookie al response
+                Cookie cookie = new Cookie("authToken", token.toString());
+                cookie.setHttpOnly(true);
+                response.addCookie(cookie);
+
+                return ResponseEntity.ok().body(token1);
+            }
         }
 
-        userRepository.save(user); // Guardar el token en la base de datos
-
-        // Guardar la sesión
-        UUID token = UUID.randomUUID();
-        Session session = new Session(token, Instant.now(), user);
-        sessionRepository.save(session);
-
-        // Crear la respuesta con el token en formato JSON
-        token token1 = new token(token.toString());
-
-        // Configurar y agregar la cookie al response
-        Cookie cookie = new Cookie("authToken", token.toString());
-        cookie.setHttpOnly(true);
-        response.addCookie(cookie);
-
-        return ResponseEntity.ok().body(token1);
     }
 
     @PostMapping("logout")
-    public ResponseEntity<?> logoutSubmit(HttpServletResponse response) {
+    public ResponseEntity<?> logoutSubmit(@CookieValue("authToken") UUID token,HttpServletResponse response) {
+        sessionRepository.delete(sessionRepository.findByToken(token));
         Cookie cookie = new Cookie("authToken", null);
         cookie.setMaxAge(0);
         cookie.setSecure(true);
@@ -83,9 +103,9 @@ public class LoginController {
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }
-    @GetMapping("/{token}")
+    @GetMapping("/username")
     @ResponseBody
-    public ResponseEntity<?> getUsernameFromToken(@PathVariable UUID token) {
+    public ResponseEntity<?> getUsernameFromToken(@CookieValue("authToken") UUID token) {
         Session session = sessionRepository.findByToken(token);
         if (session == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new name("User not found"));

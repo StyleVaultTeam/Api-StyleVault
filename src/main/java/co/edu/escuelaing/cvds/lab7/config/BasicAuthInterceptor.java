@@ -31,11 +31,16 @@ public class BasicAuthInterceptor implements HandlerInterceptor {
 
 
     private String getCookieValue(HttpServletRequest req, String cookieName) {
-        return Arrays.stream(req.getCookies())
-                .filter(c -> c.getName().equals(cookieName))
-                .findFirst()
-                .map(Cookie::getValue)
-                .orElse(null);
+        Cookie[] cookies = req.getCookies();
+        if (cookies != null) {
+            return Arrays.stream(cookies)
+                    .filter(c -> c.getName().equals(cookieName))
+                    .findFirst()
+                    .map(Cookie::getValue)
+                    .orElse(null);
+        } else {
+            return null;
+        }
     }
 
     @Override

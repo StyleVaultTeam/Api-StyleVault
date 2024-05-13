@@ -60,10 +60,11 @@ public class LoginController {
             cookie.setPath("/");
             //response.addCookie(cookie);
 
-            ResponseCookie springCookie = ResponseCookie.from("refresh-token", UUID.randomUUID().toString())
-                    .sameSite("None")
-                    .domain("localwebapp")
+            ResponseCookie springCookie = ResponseCookie.from("authToken", token.toString())
+                    .domain("localhost")
                     .httpOnly(true)
+                    //.secure(true)
+                    //.sameSite("None")
                     .build();
 
             response.addHeader("Set-Cookie", springCookie.toString());

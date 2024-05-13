@@ -53,17 +53,18 @@ public class LoginController {
             token token1 = new token(token.toString());
 
             // Configurar y agregar la cookie al response
-            Cookie cookie = new Cookie("authToken", token.toString());
-            cookie.setHttpOnly(false);
-            cookie.setSecure(false);
-            cookie.setDomain("localwebapp");
-            cookie.setPath("/");
+            //cookie cookie = new Cookie("authToken", token.toString());
+            //cookie.setHttpOnly(false);
+            //cookie.setSecure(false);
+            //cookie.setDomain("appcvds2.azurewebsites.net");
+            //cookie.setPath("/");
             //response.addCookie(cookie);
 
-            ResponseCookie springCookie = ResponseCookie.from("refresh-token", UUID.randomUUID().toString())
-                    .sameSite("None")
-                    .domain("localwebapp")
+            ResponseCookie springCookie = ResponseCookie.from("authToken", token.toString())
+                    .domain("appcvds2.azurewebsites.net")
                     .httpOnly(true)
+                    .secure(true)
+                    .sameSite("None")
                     .build();
 
             response.addHeader("Set-Cookie", springCookie.toString());

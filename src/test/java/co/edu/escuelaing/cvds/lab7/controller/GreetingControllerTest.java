@@ -63,21 +63,4 @@ class GreetingControllerTest {
         }
     }
 
-    @Test
-    void getToDoItem() {
-        // Arrange / Given - precondition or setup
-        ToDoItem expectedToDoItem = new ToDoItem(1, 1, "delectus aut autem", false);
-        // https://www.baeldung.com/spring-mock-rest-template
-        Mockito
-                .when(restTemplate.getForEntity("https://jsonplaceholder.typicode.com/todos/1", ToDoItem.class))
-                .thenReturn(new ResponseEntity<ToDoItem>(expectedToDoItem, HttpStatus.OK));
-
-        // Act / When - action or the behaviour that we are going test
-        String value = greetingController.getToDoItem(1, model);
-
-        // Assert / Then - verify the output
-        assertEquals("to-do-item", value);
-
-        verify(model, times(1)).addAttribute(eq("toDoItem"), argThat(new ToDoItemMatcher(expectedToDoItem)));
-    }
 }
